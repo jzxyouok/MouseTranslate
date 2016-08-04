@@ -9,6 +9,12 @@
        android:layout_height="wrap_content"
        android:text="韩语"
        android:gravity="center"/>
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="ok"
+        android:id="@+id/ok"
+        android:gravity="center"/>
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
