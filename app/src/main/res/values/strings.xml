@@ -1,0 +1,25 @@
+<resources>
+    <string name="app_name">鼠译</string>
+    <string name="item_about">关于</string>
+    <string name="et_hint">请输入要翻译的词或句子</string>
+    <string name="original">原文 :&#160;</string>
+    <string name="result">译文</string>
+    <string name="text_result" />
+    <string name="original_is_too_long">喂喂喂 , 这么长怎么翻译得过来&#8230;</string>
+    <string name="dont_support_language">你输入的是火星文么 ?</string>
+    <string name="invalid_key">我家的钥匙好像没用了&#8230;</string>
+    <string name="invalid_translate">可能翻译结果被外星人劫持了&#8230;</string>
+    <string name="copy_success">干嘛要复制我 ? 你想做什么&#8230;</string>
+    <string name="no_text_delete">空气君是无辜的 , 请不要删除它&#8230;</string>
+    <string name="no_text_translate">臣妾翻译不来无字天书&#8230;</string>
+    <string name="no_internet">网络被你吃掉了 , 快吐出来&#8230;</string>
+    <string name="set_internet">吐出来</string>
+    <string name="give_me_five">给我个赞嘛 ~</string>
+    <string name="five">既然都看到了 , 干脆就去评价下呗</string>
+    <string name="positive" type="id">依你</string>
+    <string name="negative" type="id">不依</string>
+    <string name="dislike" type="id">连个赞都不肯给 , 宝宝很生气 !&#160;再见 !</string>
+    <string name="dic">字典</string>
+    <string name="us_phonetic">美式发音 : &#160;</string>
+    <string name="en_phonetic">英式发音 : &#160;</string>
+</resources>
