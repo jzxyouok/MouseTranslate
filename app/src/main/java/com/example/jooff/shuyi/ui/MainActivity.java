@@ -13,6 +13,7 @@ import android.support.v7.widget.CardView;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.support.v7.widget.helper.ItemTouchHelper;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
@@ -35,13 +36,17 @@ import com.android.volley.toolbox.Volley;
 import com.example.jooff.shuyi.R;
 import com.example.jooff.shuyi.adapter.HistoryAdapter;
 import com.example.jooff.shuyi.api.YoudaoTranslate;
+import com.example.jooff.shuyi.db.MouseTranslateDB;
+import com.example.jooff.shuyi.model.RecHistoryItem;
 import com.example.jooff.shuyi.utils.NetworkState;
 import com.example.jooff.shuyi.utils.UTF8Format;
+import com.example.jooff.shuyi.view.DividerItemDecoration;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Objects;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
     private EditText editText;
@@ -55,31 +60,77 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private TextView dic_speech;
     private CardView content_dic;
     private RecyclerView rv;
-    private ArrayList<RecHistoryItem> lists;
+    private ArrayList<RecHistoryItem> lists = new ArrayList<>();
     private CardView content_history;
     private TextView enPhonetic;
     private TextView usPhonetic;
     private LinearLayout phonetic;
     private HistoryAdapter myAdapter;
     private ImageView fab;
-
+    private MouseTranslateDB mouseTranslateDB;
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         initView();
+        mouseTranslateDB = MouseTranslateDB.getInstance(this);
         requestQueue = Volley.newRequestQueue(MainActivity.this);
-        lists = new ArrayList<>();
+        lists = (ArrayList<RecHistoryItem>) mouseTranslateDB.loadHistory();
+        if (lists.size() == 0 )
+            content_history.setVisibility(View.GONE);
         myAdapter = new HistoryAdapter(MainActivity.this, lists);
+        myAdapter.setOnItemClickListener(new HistoryAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClick(View v, int position) {
+                editText.setText(lists.get(position).getTextOriginal());
+                text_result.setText(lists.get(position).getTextResult());
+                cardView.setVisibility(View.VISIBLE);
+                content_history.setVisibility(View.GONE);
+            }
+        });
         rv.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
         rv.setAdapter(myAdapter);
-        content_history.setVisibility(View.GONE);
+        rv.addItemDecoration(new DividerItemDecoration(this,DividerItemDecoration.VERTICAL_LIST));
         result_collect.setTag("cancel");
         fab.setOnClickListener(this);
         original_delete.setOnClickListener(this);
         result_copy.setOnClickListener(this);
         result_collect.setOnClickListener(this);
+        ItemTouchHelper itemTouchHelper = new ItemTouchHelper(new ItemTouchHelper.Callback() {
+            @Override
+            public int getMovementFlags(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder) {
+                //设置滑动的方向
+                int swipeFlags = makeFlag(ItemTouchHelper.ACTION_STATE_SWIPE, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT
+                );
+                return makeMovementFlags(0, swipeFlags);
+            }
+
+            @Override
+            public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target) {
+                return false;
+            }
+
+            /**
+             *
+             * @param viewHolder  滑动删除的Item
+             * @param direction
+             *
+             */
+
+            @Override
+            public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
+                int position = viewHolder.getAdapterPosition();
+                String s = lists.get(position).getTextOriginal();
+                mouseTranslateDB.deleteHistory(s);
+                myAdapter.remove(position);
+                //当历史记录清空时，将历史记录卡片设置为不可见
+                if (lists.size() == 0) {
+                    content_history.setVisibility(View.GONE);
+                }
+            }
+        });
+        itemTouchHelper.attachToRecyclerView(rv);
 
     }
 
@@ -127,9 +178,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             } else content_dic.setVisibility(View.GONE);
 
                             text_result.setText(dic);
-                            RecHistoryItem recHistoryItem = new RecHistoryItem(editText.getText().toString(), text_result.getText().toString());
+                            RecHistoryItem recHistoryItem = new RecHistoryItem();
+                            recHistoryItem.setTextOriginal(editText.getText().toString());
+                            recHistoryItem.setTextResult(dic);
+                            mouseTranslateDB.deleteHistory(editText.getText().toString());
+                            mouseTranslateDB.saveHistory(recHistoryItem);
+                            Log.d("存数据", "onResponse: " + mouseTranslateDB.loadHistory().size());
                             lists.add(recHistoryItem);
                             myAdapter.notifyDataSetChanged();
+
                             break;
                         case 20:
                             Snackbar.make(cardView, R.string.original_is_too_long, Snackbar.LENGTH_LONG).show();
@@ -228,6 +285,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.floatingActionButton:
+                String original = editText.getText().toString();
                 //先进行网络的判断
                 if (!NetworkState.isConnected(MainActivity.this)) {
                     Snackbar.make(view, R.string.no_internet, Snackbar.LENGTH_SHORT)
@@ -238,25 +296,23 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                 }
                             })
                             .show();
-                }
-                //判断输入是否为空
-                else {
-                    if (TextUtils.isEmpty(editText.getText())) {
-                        Snackbar.make(view, R.string.no_text_translate, Snackbar.LENGTH_SHORT).show();
-                        content_history.setVisibility(View.VISIBLE);
+                } else if (TextUtils.isEmpty(original)) {
+                    Snackbar.make(view, R.string.no_text, Snackbar.LENGTH_SHORT).show();
 
-                    } else {
-                        content_history.setVisibility(View.GONE);
-                        //先对翻译结果进行初始化
-                        text_result.setText("");
-                        sendRequest(YoudaoTranslate.TRANSLATE_URL + UTF8Format.encode(editText.getText().toString()).replace("\n", ""));
-                        InputMethodManager inputManager = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
-                        //发送请求后就隐藏输入板
-                        if (inputManager.isActive()) {
-                            inputManager.hideSoftInputFromWindow(editText.getWindowToken(), 0);
-                        }
+                } else {
+                    content_history.setVisibility(View.GONE);
+                    //先对翻译结果进行初始化
+                    text_result.setText("");
+
+                    if (Objects.equals(original, "酷安")) original = "基佬";
+                    sendRequest(YoudaoTranslate.TRANSLATE_URL + UTF8Format.encode(original).replace("\n", ""));
+                    InputMethodManager inputManager = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+                    //发送请求后就隐藏输入板
+                    if (inputManager.isActive()) {
+                        inputManager.hideSoftInputFromWindow(editText.getWindowToken(), 0);
                     }
                 }
+
                 break;
 
             case R.id.original_delete:
@@ -264,10 +320,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 phonetic.setVisibility(View.GONE);
                 editText.setText("");
                 //当输入为空时,将卡片隐藏
+                if (lists.size() != 0)
+                    content_history.setVisibility(View.VISIBLE);
                 progressBar.setVisibility(View.GONE);
                 cardView.setVisibility(View.GONE);
                 content_dic.setVisibility(View.GONE);
-                content_history.setVisibility(View.VISIBLE);
                 break;
 
             case R.id.result_copy:
@@ -281,11 +338,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.result_collect:
                 //设置tag,可以重复点击收藏图标,实现收藏或取消收藏
                 if (result_collect.getTag() == "cancel") {
-                    result_collect.setImageResource(R.mipmap.ic_star_white_24dp);
+                    result_collect.setImageResource(R.drawable.ic_star_white_24dp);
                     result_collect.setTag("collect");
+                    Snackbar.make(view,R.string.collect,Snackbar.LENGTH_SHORT).show();
                 } else if (result_collect.getTag() == "collect") {
-                    result_collect.setImageResource(R.mipmap.ic_star_border_white_24dp);
+                    result_collect.setImageResource(R.drawable.ic_star_border_white_24dp);
                     result_collect.setTag("cancel");
+                    Snackbar.make(view,R.string.cancel_collect,Snackbar.LENGTH_SHORT).show();
                 }
                 break;
 

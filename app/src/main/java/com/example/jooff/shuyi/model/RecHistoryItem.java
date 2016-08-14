@@ -1,5 +1,4 @@
-package com.example.jooff.shuyi.ui;
-
+package com.example.jooff.shuyi.model;
 
 
 /**
@@ -15,11 +14,22 @@ public class RecHistoryItem {
         this.textResult = textResult;
     }
 
+    public RecHistoryItem() {
+    }
+
     public String getTextOriginal() {
         return textOriginal;
     }
 
     public String getTextResult() {
         return textResult;
+    }
+
+    public void setTextOriginal(String textOriginal) {
+        this.textOriginal = textOriginal;
+    }
+
+    public void setTextResult(String textResult) {
+        this.textResult = textResult;
     }
 }

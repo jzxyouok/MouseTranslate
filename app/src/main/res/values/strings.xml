@@ -22,4 +22,7 @@
     <string name="dic">字典</string>
     <string name="us_phonetic">美式发音 : &#160;</string>
     <string name="en_phonetic">英式发音 : &#160;</string>
+    <string name="no_text">臣妾翻译不来无字天书</string>
+    <string name="collect">收藏了我还要记得来看我</string>
+    <string name="cancel_collect">为什么要赶我走&#160;？</string>
 </resources>

@@ -6,15 +6,14 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="@dimen/cardView_padding"
-    android:visibility="visible"
     tools:showIn="@layout/content_main"
-    app:cardBackgroundColor="@color/white">
+    app:cardBackgroundColor="@color/background">
 
     <android.support.v7.widget.RecyclerView
         android:id="@+id/rec_history"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="@dimen/activity_horizontal_margin">
+        >
 
     </android.support.v7.widget.RecyclerView>
 
